@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const root=new URL('../',import.meta.url);
+let js=fs.readFileSync(new URL('dist/assets/app.js',root),'utf8');
+const renderer=fs.readFileSync(new URL('node_modules/react-dom/cjs/react-dom-server-legacy.browser.production.js',root),'utf8');
+js=js.replace('const modules={',()=> 'const modules={"renderServer":function(require,module,exports){'+renderer+'\n},');
+js=js.replace("load('src/main.jsx');","globalThis.rendered=load('renderServer').renderToStaticMarkup(load('react').createElement(load('src/App.jsx').default));");
+const context={console,TextEncoder,TextDecoder,setTimeout,clearTimeout,MessageChannel,performance};
+vm.runInNewContext(js,context,{timeout:20000});
+assert.ok(context.rendered.includes('115 學年度國中國文複習'));for(const move of ['破壞光線','打雷','十萬伏特','電擊波','電擊'])assert.ok(context.rendered.includes(move));assert.ok(context.rendered.includes('274 題可用'));assert.ok(!context.rendered.includes('自動數學練習'));assert.ok(context.rendered.includes('./assets/25.png'));
+console.log(JSON.stringify({rendered:true,htmlLength:context.rendered.length,defaultBank:true,fiveMoves:true,partnerArtwork:true}));
